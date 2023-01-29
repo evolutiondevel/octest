@@ -2,7 +2,34 @@
 namespace Cart;
 class Cart {
 	private $data = array();
+    private $units = array(
+        "MINUTE" => 60,         //60
+        "HOUR"   => 3600,       //60 * 60
+        "DAY"    => 86400,      //60 * 60 * 24
+        "WEEK"   => 604800,     //60 * 60 * 24 * 7
+        "MONTH"  => 2678400,    //60 * 60 * 24 * 31
+        "YEAR"   => 31536000    //60 * 60 * 24 * 365
+    );
+    private function getInterval()
+    {
+        $status   = $this->config->get('cart_status');
+        $lifetime = (int) $this->config->get('cart_lifetime');
+        $unit     = $this->config->get('cart_unit');
 
+        if ($status != 1 || array_key_exists($unit, $this->units) === false) {
+            return '1 HOUR';
+        }
+
+        return (int) $lifetime . " " . $unit;
+    }
+    private function getLifetime()
+    {
+        $lifetime = (int) $this->config->get('cart_lifetime');
+        $unit     = $this->config->get('cart_unit');
+
+        $u=(isset($this->units[$unit])) ? $this->units[$unit] : 60;
+        return $lifetime * $u;
+    }
 	public function __construct($registry) {
 		$this->config = $registry->get('config');
 		$this->customer = $registry->get('customer');
@@ -12,8 +39,13 @@ class Cart {
 		$this->weight = $registry->get('weight');
 
 		// Remove all the expired carts with no customer ID
-		$this->db->query("DELETE FROM " . DB_PREFIX . "cart WHERE (api_id > '0' OR customer_id = '0') AND date_added < DATE_SUB(NOW(), INTERVAL 1 HOUR)");
-
+		$this->db->query("DELETE FROM " . DB_PREFIX . "cart WHERE (api_id > '0' OR customer_id = '0') AND date_added < DATE_SUB(NOW(), INTERVAL " . $this->getInterval() . ")");
+        if($this->config->get('cart_status') == 1) {
+            if(isset($_COOKIE["cart_session_id"])) {
+                $this->db->query("UPDATE " . DB_PREFIX . "cart SET session_id = '" . $this->db->escape($this->session->getId()) . "' WHERE session_id = '" . $this->db->escape($_COOKIE["cart_session_id"]) . "' AND customer_id = '0'");
+            }
+            setcookie("cart_session_id", $this->session->getId(), time() + $this->getLifetime(), ini_get('session.cookie_path'), ini_get('session.cookie_domain'), ini_get('session.cookie_secure'), ini_get('session.cookie_httponly'));
+        }
 		if ($this->customer->getId()) {
 			// We want to change the session ID on all the old items in the customers cart
 			$this->db->query("UPDATE " . DB_PREFIX . "cart SET session_id = '" . $this->db->escape($this->session->getId()) . "' WHERE api_id = '0' AND customer_id = '" . (int)$this->customer->getId() . "'");
