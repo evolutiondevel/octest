@@ -5,6 +5,7 @@ body {
 	font-size: 12px;
 	line-height: 20px;
 	width: 100%;
+	overflow-x: hidden;
 }
 h1, h2, h3, h4, h5, h6 {
 	color: #444;
@@ -622,6 +623,16 @@ h2.price {
 	.product-list .product-thumb .button-group {
 		border-left: none;
 	}
+	#cart ul.dropdown-menu{
+		position: fixed;
+		top: auto;
+		bottom: -600px;
+		display: block;
+		transition: all 1s ease;
+	}
+	#cart.open ul.dropdown-menu{
+		bottom: 0;
+	}
 }
 .product-thumb .button-group button {
 	width: 60%;
@@ -730,6 +741,19 @@ h2.price {
     #content + #column-right .product-layout .col-md-3 {
        width: 100%;
     }
+	#cart ul.dropdown-menu {
+		display: block;
+		transition: 0.7s ease;
+		right: -800px;
+		top: 98%;
+		-webkit-transition-delay: 0.1s;
+		-o-transition-delay: 0.1s;
+		-moz-transition-delay: 0.1s;
+		transition-delay: 0.1s;
+	}
+	#cart:hover ul.dropdown-menu {
+		right: 0px;
+	}
 }
 
 /* fixed product layouts used in left and right columns */
